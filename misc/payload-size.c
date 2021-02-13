@@ -9,6 +9,7 @@ typedef struct {
 
 int main(void) {
     printf("%lu\n", sizeof(smartPortPayload_t));
+    printf("%lu\n", sizeof(smartPortPayload_t) - sizeof(uint8_t));
 
     return 0;
 }

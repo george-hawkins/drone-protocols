@@ -3,6 +3,9 @@ import busio
 import array
 from collections import namedtuple
 
+from msp import MspApiVersionCommand, MspErrorResponse
+from msp_request import MspPackage, MspError
+
 
 class Fssp:
     START_STOP = 0x7E
@@ -19,7 +22,7 @@ class Fssp:
     SENSOR_ID2 = 0x0D
 
 
-Payload = namedtuple("Payload", "frameId valueId data")
+Payload = namedtuple("Payload", "frame_id value_id data")
 
 
 # Notes:
@@ -33,7 +36,7 @@ Payload = namedtuple("Payload", "frameId valueId data")
 
 class AbstractSensor:
     def __init__(self, sensor_id):
-        self.sensor_id = sensor_id.to_bytes(2, "little")
+        self.sensor_id = sensor_id.to_bytes(2, SmartPort.BYTE_ORDER)
 
     def get_value(self):
         raise NotImplementedError("get_value")
@@ -67,23 +70,22 @@ class Tmp2Sensor(AbstractSensor):
         return self._count
 
 
-def looper(s):
+def looper(end):
     i = 0
-    end = len(s)
     while True:
-        yield s[i]
-        i += 1
-        if i == end:
-            i = 0
+        yield i
+        i = (i + 1) % end
 
 
 class SmartPort:
     SPORT_BAUD = 57600
     PAYLOAD_SIZE = 7  # TODO: see if you can work this out in Python from struct description - remember it's packed, so you want 7 and 8 as the answer.
     SERVICE_TIMEOUT_NS = 1000 * 1000  # 1ms.
+    BYTE_ORDER = "little"
 
     def __init__(self, sport_tx, sport_rx, sensors=None):
         self.clear_to_send = False
+        # TODO: why did I do this with `array` - change to `bytearray`.
         self.rx_buffer = array.array("B", (0 for _ in range(0, self.PAYLOAD_SIZE)))
         self.rx_offset = 0
         self.skip_until_start = True
@@ -93,7 +95,9 @@ class SmartPort:
         self.id_cycle_count = 0
         self.t1_cnt = 0
         self.t2_cnt = 0
-        self.skip_requests = 0
+        self.msp_package = MspPackage()
+        self.msp_response = None
+        self.msp_seq_iter = looper(0x10)
 
         self.uart = busio.UART(sport_tx, sport_rx, baudrate=self.SPORT_BAUD)
 
@@ -102,6 +106,15 @@ class SmartPort:
             assert all(ids.count(i) == 1 for i in ids)  # Check all IDs are unique.
             self.sensors = sensors
             self.sensors_iter = looper(sensors)
+
+        self.msp_commands = self.get_msp_commands()
+
+    @staticmethod
+    def get_msp_commands():
+        commands = [
+            MspApiVersionCommand()
+        ]
+        return {c.command: c for c in commands}
 
     def ready_to_send(self):
         return self.uart.in_waiting == 0
@@ -147,11 +160,15 @@ class SmartPort:
                 if self.checksum == 0xFF:
                     # TODO: consider `memoryview` or look at working with `struct`.
                     frame_id = self.rx_buffer[0]
-                    value_id = int.from_bytes(self.rx_buffer[1:3], "little")
+                    value_id = int.from_bytes(self.rx_buffer[1:3], self.BYTE_ORDER)
                     data = self.rx_buffer[3:7]
+                    # TODO: if `frame_id` is anything other than MSPC_FRAME_SMARTPORT (see `contains_msp`) we ignore
+                    #  the payload later - maybe it would be better to discard it here.
                     print("frame_id:", frame_id)
+                    # TODO: splitting out `value_id` and `data` is stupid - really it's 6 bytes of opaque data. See note on smartPortPayload_t definition.
                     print("value_id:", value_id)
                     print("data:", data)
+                    print("MSP frame: ", "".join("\\x{:02X}".format(ch) for ch in self.rx_buffer).join(['"', '"']))
                     return Payload(frame_id, value_id, data)
 
         return None
@@ -163,10 +180,11 @@ class SmartPort:
             checksum = (checksum & 0xFF) + (checksum >> 8)
         return 0xFF - checksum
 
-    # TODO: which is better `bytes([x])` or `x.to_bytes(1, "little")`.
+    # TODO: which is better `bytes([x])` or `x.to_bytes(1, self.BYTE_ORDER)`.
     def write(self, b):
         # TODO: should check count returned by `write`.
         self.uart.write(bytes([b]))
+        # print("{:02X}".format(b))
 
     def send_byte(self, b):
         sent = 0
@@ -188,30 +206,87 @@ class SmartPort:
         # The UART will see the sent data echoed on its RX - ignore this data.
         # TODO: remember to remove this if you get half-duplex working on a single pin.
         self.uart.read(sent)
+        # print("--")
 
     def send_package(self, sensor_id, value):
         # TODO: look at working with `struct`.
-        payload = bytes([Fssp.DATA_FRAME]) + sensor_id + value.to_bytes(4, "little")
+        payload = bytes([Fssp.DATA_FRAME]) + sensor_id + value.to_bytes(4, self.BYTE_ORDER)
         self.write_frame(payload)
+
+    # TODO: smartPortPayload_t is defined as:
+    #  typedef struct {
+    #      uint8_t  frameId;
+    #      uint16_t valueId;
+    #      uint32_t data;
+    #  } __attribute__((packed)) smartPortPayload_t;
+    #  The packed means it's 7 bytes rather than 8.
+    #  But really `frameId` and that it's 7 bytes in total are the only fixed thing.
+    #  For DATA_FRAME, `frameId` is followed by `valueId` (2 bytes) and `data` (4 bytes).
+    #  For MSPS_FRAME, `frameId` is followed by 6 bytes of data.
+    #  So either model things using a union or as two different structs.
+    def send_msp_response(self, data):
+        assert len(data) == 6
+        payload = bytes([Fssp.MSPS_FRAME]) + data
+        self.write_frame(payload)
+
+    def handle_msp_frame(self, payload):
+        result = self.msp_package.handle_frame(payload)
+        if result is None:
+            return None
+        if result.error is None:
+            command = self.msp_commands[result.command]
+            if command is None:
+                print("Error: no command for {}".format(result))
+                return MspErrorResponse(MspError.ERROR, result.command)
+            else:
+                return command.get_response(payload)
+        else:
+            return MspErrorResponse(result.error, result.command)
+
+    @staticmethod
+    def contains_msp(payload):
+        return payload.frame_id == Fssp.MSPC_FRAME_SMARTPORT
+
+    # TODO: what happens when we see traffic from other sensors on the same bus?
 
     # TODO: rename private methods and field to start with `_`.
     def process(self, payload):
-        if self.skip_requests > 0:
-            self.skip_requests -= 1
-        # TODO: else check for MSP payloads.
-        # TODO: is self.skip_requests just some weird EEPROM related thing that we can live without?
+        if payload is not None and self.contains_msp(payload):
+            if self.msp_response:
+                print("Warning: MSP payload received while still sending previous response - discarding old response")
+            # TODO: this is stupid - we're just reversing a pointless split we did when creating the payload.
+            data = payload.value_id.to_bytes(2, self.BYTE_ORDER) + payload.data
+            self.msp_response = self.handle_msp_frame(data)
 
-        # TODO: are `clear_to_send` or `skip_requests` really needed?
-
-        if not self.clear_to_send or self.skip_requests > 0:
+        # TODO: is `clear_to_send` really needed?
+        if not self.clear_to_send:
             return
 
-        # TODO: handle smartPortMspReplyPending.
+        if self.msp_response:
+            # TODO: make 6 a constant.
+            frame_buf = bytearray(6)
+            # TODO: bundle `msp_seq_iter` and `send_msp_response` and the other MSP logic into its own class.
+            finished = self.msp_response.write(next(self.msp_seq_iter), frame_buf)
+            if finished:
+                self.msp_response = None
+            self.send_msp_response(frame_buf)
+            self.clear_to_send = False
+            return
+
+        # TODO:
+        #  The remote side has given us a slot of about 1ms to transmit something.
+        #  The code below assumes that every sensor will always have a value it wants to transmit.
+        #  So we simply ask the `next` sensor for a value and transmit it.
+        #  However, in the original code a sensor might not currently have anything to transmit.
+        #  In such a case we could loop, taking care not to run over our 1ms slot, until a sensor has something to say.
+        #  We'd replace the `clear_to_send` check above with a while loop.
 
         if self.sensors is not None:
-            sensor = next(self.sensors_iter)
+            sensor = self.sensors[next(self.sensors_iter)]
             self.send_package(sensor.sensor_id, sensor.get_value())
             # TODO: `clear_to_send` will become False anyway when we return and `pump` is next called.
+            #  However, see note above - it's not a given that a sensor must have something to transmit.
+            #  In which case we wouldn't automatically set `clear_to_send` here but would loop until someone sent (or we ran out of time).
             self.clear_to_send = False
 
     def pump(self):

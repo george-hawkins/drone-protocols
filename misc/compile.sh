@@ -2,9 +2,11 @@
 
 ROOT=/home/ghawkins/git/betaflight-ghawkins
 
+FILE=msp_shared
+
 arm-none-eabi-gcc \
     -c \
-    -o smartport.o \
+    -o $FILE.o \
     -mthumb \
     -mcpu=cortex-m7 \
     -mfloat-abi=hard \
@@ -60,4 +62,4 @@ arm-none-eabi-gcc \
     -fuse-linker-plugin \
     -ffast-math \
     -O2 \
-    smartport.c
+    $FILE.c
