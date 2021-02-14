@@ -1,6 +1,6 @@
 import unittest
 
-from msp import MspApiVersionCommand
+from msp import MspApiVersionCommand, MspVtxConfigCommand, VtxConfig, MspVtxTableBandCommand, MspSetVtxConfigCommand
 from msp_request import MspPackage, MspResult, MspCommand, MspError
 
 
@@ -42,6 +42,100 @@ class MyTestCase(unittest.TestCase):
         finished = response.write(0, frame_buf)
         self.assertTrue(finished)
         expected = bytes([0x10, 0x03, command.PROTOCOL_VERSION, command.VERSION_MAJOR, command.VERSION_MINOR, 0x28])
+        self.assertEqual(expected, frame_buf)
+
+    def test_vtx_config_response(self):
+        config = VtxConfig()
+        command = MspVtxConfigCommand(config)
+        response = command.get_response(None)
+
+        # TODO: make 6 a constant (see `msp_response` logic).
+        frame_buf = bytearray(6)
+
+        seq = 0
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([0x10, 0x0f, 0x03, 0x00, 0x00, 0x00])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, 0x01, 0x00, 0x00, 0x01, 0x00])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, 0xFD, 0x7F, 0x01, 0x02, 0x03])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertTrue(finished)
+        expected = bytes([seq, 0x04, 0xD2, 0x00, 0x00, 0x00])
+        self.assertEqual(expected, frame_buf)
+
+    def test_vtx_table_band(self):
+        config = VtxConfig()
+        command = MspVtxTableBandCommand(config)
+        response = command.get_response(b'\x01')
+
+        # TODO: make 6 a constant (see `msp_response` logic).
+        frame_buf = bytearray(6)
+
+        seq = 0
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([0x10, 0x1d, 0x01, 0x08, ord("B"), ord("O")])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, ord("S"), ord("C"), ord("A"), ord("M"), ord("_")])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, ord("A"), ord("A"), 0x01, 0x08, 0xE9])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, 0x16, 0xD5, 0x16, 0xC1, 0x16])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, 0xAD, 0x16, 0x99, 0x16, 0x85])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertFalse(finished)
+        expected = bytes([seq, 0x16, 0x71, 0x16, 0x00, 0x00])
+        self.assertEqual(expected, frame_buf)
+
+        seq += 1
+        finished = response.write(seq, frame_buf)
+        self.assertTrue(finished)
+        expected = bytes([seq, 0xF1, 0x00, 0x00, 0x00, 0x00])
+        self.assertEqual(expected, frame_buf)
+
+    def test_vtx_table_band(self):
+        config = VtxConfig()
+        command = MspSetVtxConfigCommand(config)
+        response = command.get_response(b'\x00\x00\x01\x00')
+
+        # TODO: make 6 a constant (see `msp_response` logic).
+        frame_buf = bytearray(6)
+        finished = response.write(0, frame_buf)
+        self.assertTrue(finished)
+        expected = bytes([0x10, 0x00, 0x59, 0x00, 0x00, 0x00])
         self.assertEqual(expected, frame_buf)
 
 

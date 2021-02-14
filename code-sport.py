@@ -3,7 +3,8 @@ import busio
 import array
 from collections import namedtuple
 
-from msp import MspApiVersionCommand, MspErrorResponse
+from msp import MspApiVersionCommand, MspErrorResponse, MspVtxConfigCommand, VtxConfig, MspVtxTableBandCommand, \
+    MspVtxTablePowerLevelCommand, MspSetVtxConfigCommand, MspSaveAllCommand
 from msp_request import MspPackage, MspError
 
 
@@ -105,20 +106,48 @@ class SmartPort:
             ids = list(map(lambda s: s.sensor_id, sensors))
             assert all(ids.count(i) == 1 for i in ids)  # Check all IDs are unique.
             self.sensors = sensors
-            self.sensors_iter = looper(sensors)
+            self.sensors_iter = looper(len(sensors))
 
         self.msp_commands = self.get_msp_commands()
 
     @staticmethod
     def get_msp_commands():
+        vtx_config = VtxConfig()
+        configs = [vtx_config]  # At the moment there's just the VTX config.
         commands = [
-            MspApiVersionCommand()
+            MspApiVersionCommand(),
+            MspVtxConfigCommand(vtx_config),
+            MspVtxTableBandCommand(vtx_config),
+            MspVtxTablePowerLevelCommand(vtx_config),
+            MspSetVtxConfigCommand(vtx_config),
+            MspSaveAllCommand(configs)
         ]
         return {c.command: c for c in commands}
 
+    # TODO: WARNING - if you move to reading more that 1 byte at a time you also have to check that there are
+    #  no bytes left in the buffer of bytes that you read.
     def ready_to_send(self):
         return self.uart.in_waiting == 0
 
+    # TODO: this is all a bit odd, what exactly are the structures we expect to see? Maybe:
+    #   * [ START_STOP, SENSOR_ID1 ] and empty input buffer = clear-to-send
+    #   * [ START_STOP, SENSOR_ID2, p1, ..., pn, checksum ] = MSP (and possibly other things) packet.
+    #   Note: p1 to pn will reduce down to 7 bytes, i.e. PAYLOAD_SIZE, after `byte_stuffing` logic is applied.
+    # TODO: print out all blocks starting with START_STOP, with each byte (including START_STOP) preceded
+    #  by time in micros since last byte, is [ START_STOP, SENSOR_ID1 ] followed by an unusually long pause?
+    #  At the moment we break out of the calling loop:
+    #  * If we hit [ START_STOP, SENSOR_ID1 ] followed by no characters (both this fn and caller check for no further chars).
+    #  * If we get a packet.
+    #  However, if we get a packet we won't also get clear-to-send until we reenter this loop.
+    #  Surely there's a clearer way of expressing this flow.
+    #  If we get a packet we want to ready a response.
+    #  If we get a clear to send we see if we've got an outstanding response otherwise we send a sensor value.
+    #
+    # Proposal:
+    # Have logic that looks out for RX advertisements to talk, i.e. START_STOP followed by an ID (is START_STOP
+    # really just START or does it appear elsewhere?)
+    # Have separate logic that decides what to do - use the opportunity to talk (send sensor or MSP data) for
+    # SENSOR_ID1 or listen out for MSP data for SENSOR_ID2.
     def data_receive(self, c):
         if c == Fssp.START_STOP:
             self.clear_to_send = False
@@ -156,7 +185,9 @@ class SmartPort:
             else:
                 self.skip_until_start = True
 
+                self.checksum &= 0xFFF
                 self.checksum = (self.checksum & 0xFF) + (self.checksum >> 8)
+
                 if self.checksum == 0xFF:
                     # TODO: consider `memoryview` or look at working with `struct`.
                     frame_id = self.rx_buffer[0]
@@ -164,15 +195,15 @@ class SmartPort:
                     data = self.rx_buffer[3:7]
                     # TODO: if `frame_id` is anything other than MSPC_FRAME_SMARTPORT (see `contains_msp`) we ignore
                     #  the payload later - maybe it would be better to discard it here.
-                    print("frame_id:", frame_id)
                     # TODO: splitting out `value_id` and `data` is stupid - really it's 6 bytes of opaque data. See note on smartPortPayload_t definition.
-                    print("value_id:", value_id)
-                    print("data:", data)
                     print("MSP frame: ", "".join("\\x{:02X}".format(ch) for ch in self.rx_buffer).join(['"', '"']))
                     return Payload(frame_id, value_id, data)
+                else:
+                    print("Error: invalid checksum:", self.checksum)
 
         return None
 
+    # TODO: `self.checksum` is the incoming checksum, this is the calculation for the outgoing checksum.
     @staticmethod
     def get_checksum(total):
         checksum = total & 0xFFFF
@@ -229,17 +260,18 @@ class SmartPort:
         payload = bytes([Fssp.MSPS_FRAME]) + data
         self.write_frame(payload)
 
+    # TODO: confusing naming - rename `payload` to frame or frame_buf.
     def handle_msp_frame(self, payload):
         result = self.msp_package.handle_frame(payload)
         if result is None:
             return None
         if result.error is None:
-            command = self.msp_commands[result.command]
+            command = self.msp_commands.get(result.command)
             if command is None:
-                print("Error: no command for {}".format(result))
+                print("Error: no command for {} {}".format(result.command, result.payload))
                 return MspErrorResponse(MspError.ERROR, result.command)
             else:
-                return command.get_response(payload)
+                return command.get_response(result.payload)
         else:
             return MspErrorResponse(result.error, result.command)
 
@@ -252,7 +284,7 @@ class SmartPort:
     # TODO: rename private methods and field to start with `_`.
     def process(self, payload):
         if payload is not None and self.contains_msp(payload):
-            if self.msp_response:
+            if self.msp_response is not None:
                 print("Warning: MSP payload received while still sending previous response - discarding old response")
             # TODO: this is stupid - we're just reversing a pointless split we did when creating the payload.
             data = payload.value_id.to_bytes(2, self.BYTE_ORDER) + payload.data
@@ -292,6 +324,7 @@ class SmartPort:
     def pump(self):
         payload = None
         self.clear_to_send = False
+        # TODO: see WARNING on `ready_to_send` method.
         while self.uart.in_waiting > 0 and not payload:
             c = self.uart.read(1)[0]
             payload = self.data_receive(c)
