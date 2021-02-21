@@ -1,68 +1,68 @@
-TX pin: board.A2    RX pin: board.A3      
-TX pin: board.A2    RX pin: board.D4      
-TX pin: board.A2    RX pin: board.D5      
+Valid TX/RX pin combinations as discovered by `uart-discovery.py`:
 
-TX pin: board.A4    RX pin: board.A1      
-TX pin: board.A4    RX pin: board.A5      
-TX pin: board.A4    RX pin: board.D2      
+    TX pin: board.A2      RX pin: board.A3
+    TX pin: board.A2      RX pin: board.D4
+    TX pin: board.A2      RX pin: board.SDA
 
-TX pin: board.A5    RX pin: board.A1      
-TX pin: board.A5    RX pin: board.A4      
-TX pin: board.A5    RX pin: board.D2      
+    TX pin: board.A4      RX pin: board.A1
+    TX pin: board.A4      RX pin: board.A5
+    TX pin: board.A4      RX pin: board.D2
 
-TX pin: board.D0    RX pin: board.D1      
-TX pin: board.D0    RX pin: board.D3      
-TX pin: board.D0    RX pin: board.D7      
-TX pin: board.D0    RX pin: board.D9      
+    TX pin: board.D0      RX pin: board.D1
+    TX pin: board.D0      RX pin: board.D3
+    TX pin: board.D0      RX pin: board.D7
+    TX pin: board.D0      RX pin: board.D9
+    TX pin: board.D0      RX pin: board.MISO
+    TX pin: board.D0      RX pin: board.SCK
 
-TX pin: board.D4    RX pin: board.A2      
-TX pin: board.D4    RX pin: board.A3      
-TX pin: board.D4    RX pin: board.D5      
+    TX pin: board.D1      RX pin: board.D0
+    TX pin: board.D1      RX pin: board.D7
+    TX pin: board.D1      RX pin: board.D9
+    TX pin: board.D1      RX pin: board.D10
+    TX pin: board.D1      RX pin: board.D11
+    TX pin: board.D1      RX pin: board.D12
 
-TX pin: board.D12    RX pin: board.D3      
-TX pin: board.D12    RX pin: board.D10     
-TX pin: board.D12    RX pin: board.D11     
-TX pin: board.D12    RX pin: board.D13     
+    TX pin: board.D12     RX pin: board.D3
+    TX pin: board.D12     RX pin: board.D10
+    TX pin: board.D12     RX pin: board.D11
+    TX pin: board.D12     RX pin: board.D13
+    TX pin: board.D12     RX pin: board.MISO
 
-TX pin: board.D1    RX pin: board.D0      
-TX pin: board.D1    RX pin: board.D7      
-TX pin: board.D1    RX pin: board.D9      
-TX pin: board.D1    RX pin: board.D10     
-TX pin: board.D1    RX pin: board.D11     
-TX pin: board.D1    RX pin: board.D12     
+    TX pin: board.D13     RX pin: board.D0
+    TX pin: board.D13     RX pin: board.D7
+    TX pin: board.D13     RX pin: board.D9
+    TX pin: board.D13     RX pin: board.D10
+    TX pin: board.D13     RX pin: board.D11
+    TX pin: board.D13     RX pin: board.D12
 
-TX pin: board.D3    RX pin: board.D0      
-TX pin: board.D3    RX pin: board.D1      
-TX pin: board.D3    RX pin: board.D9      
-TX pin: board.D3    RX pin: board.D11     
-TX pin: board.D3    RX pin: board.D12     
-TX pin: board.D3    RX pin: board.D13     
+    TX pin: board.MOSI    RX pin: board.D1
+    TX pin: board.MOSI    RX pin: board.D3
+    TX pin: board.MOSI    RX pin: board.D7
+    TX pin: board.MOSI    RX pin: board.D9
+    TX pin: board.MOSI    RX pin: board.MISO
+    TX pin: board.MOSI    RX pin: board.SCK
 
-TX pin: board.D7    RX pin: board.D0      
-TX pin: board.D7    RX pin: board.D1      
-TX pin: board.D7    RX pin: board.D9      
-TX pin: board.D7    RX pin: board.D11     
-TX pin: board.D7    RX pin: board.D12     
-TX pin: board.D7    RX pin: board.D13     
+    TX pin: board.SCL     RX pin: board.A3
+    TX pin: board.SCL     RX pin: board.D4
+    TX pin: board.SCL     RX pin: board.SDA
 
-TX pin: board.D10    RX pin: board.D0      
-TX pin: board.D10    RX pin: board.D1      
-TX pin: board.D10    RX pin: board.D9      
-TX pin: board.D10    RX pin: board.D11     
-TX pin: board.D10    RX pin: board.D12     
-TX pin: board.D10    RX pin: board.D13     
+    TX pin: board.SDA     RX pin: board.D4
+    TX pin: board.SDA     RX pin: board.SCL
 
-TX pin: board.D13    RX pin: board.D0      
-TX pin: board.D13    RX pin: board.D7      
-TX pin: board.D13    RX pin: board.D9      
-TX pin: board.D13    RX pin: board.D10     
-TX pin: board.D13    RX pin: board.D11     
-TX pin: board.D13    RX pin: board.D12     
+Notes:
 
-# Note D13 is also linked to on-board LED.
-# D0 and D1 are actually labelled as RX and TX respectively, i.e. they're treated as Serial1.
-# D5 is not a valid RX pin - it'd level shifted for 5V _output_.
+* D13 is also linked to on-board LED.
+* D0 and D1 are actually labelled as RX and TX respectively, i.e. they're treated as Serial1.
 
+`uart-discovery.py` shows the following combinations as valid but they aren't as D5 is level shifted for 5V _output_.
+
+    TX pin: board.A2      RX pin: board.D5                    
+    TX pin: board.SCL     RX pin: board.D5                     
+    TX pin: board.SDA     RX pin: board.D5                     
+
+Note cut out of my Betaflight modifications:
+
+```
 // SAMD51 seems to be more flexible than STM32 - there doesn't seem to be a concept of USART1 etc.
 // There are just a whole load of pins that can be paired to form UARTs - see:
 // https://learn.adafruit.com/introducing-adafruit-itsybitsy-m4?view=all#wheres-my-uart-2985036-19
@@ -70,6 +70,7 @@ TX pin: board.D13    RX pin: board.D12
 // sercom0.h to sercom5.h - a SERCOM covers I2C, SPI and USART - I'm taking this as meaning one
 // can have up to 6 USARTs (or I2Cs or SPIs but at most 6 of all three combined).
 // UARTDEV_COUNT_MAX allows you to enumerate up that count of pins for each UARTs RX and TX pins,
-// again I don't think things are so fixed as for STM32 - see itsy-m4-uart-pins.txt. Particular
+// again I don't think things are so fixed as for STM32. Particular
 // pins aren't limited to a particular UART, e.g. UART1.
 // I'm just leaving the UARTHARDWARE_MAX_PINS at 4 for the moment.
+```
