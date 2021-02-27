@@ -5,7 +5,7 @@ _logger = logging.getLogger("payload")
 
 class Payload:
     def __init__(self, data):
-        self.frame_id = None
+        self.frame_id = 0
         self.data = data
 
 

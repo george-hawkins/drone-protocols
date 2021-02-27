@@ -1,6 +1,7 @@
 import logging
 import board
 
+from sport.multi_payload import MultiPayloadReader
 from sport.physical_id import PhysicalId
 from sport.sport_pumper import SportPumper
 from uart_pumper import UartPumper, Poller
@@ -25,6 +26,10 @@ class HostPumper(UartPumper):
 
 
 _counter = 0
+_multi_payload_reader = MultiPayloadReader()
+
+_MSP_CLIENT_FRAME = 0x30
+_MSP_SERVER_FRAME = 0x32
 
 
 def _transmit(writer):
@@ -34,7 +39,14 @@ def _transmit(writer):
 
 
 def _receive(payload):
+    global _multi_payload_reader
     print("received", payload)
+    if payload.frame_id == _MSP_CLIENT_FRAME:
+        result = _multi_payload_reader.consume(payload.data)
+        if result:
+            print(result.command, len(result.payload), result.error)
+    else:
+        _logger.warning("ignoring payload with frame ID %d", payload.frame_id)
 
 
 class Main:

@@ -8,9 +8,6 @@ class UartPumper:
         self._uart = busio.UART(tx, rx, baudrate=baud_rate, timeout=0, receiver_buffer_size=self._RX_BUFFER_LEN)
         self._rx_buffer = bytearray(self._RX_BUFFER_LEN)
 
-    def available(self):
-        return self._uart.in_waiting > 0
-
     def pump(self):
         count = self._uart.readinto(self._rx_buffer)
         if count:
@@ -18,7 +15,7 @@ class UartPumper:
             last = count - 1
 
             def is_clear():
-                return i == last and not self.available()
+                return i == last and self._uart.in_waiting == 0
 
             while i < count:
                 self._consume(self._rx_buffer[i], is_clear)
@@ -28,14 +25,14 @@ class UartPumper:
         raise NotImplementedError("_consume")
 
 
+# On MicroPython, this class used `uselect.poll` but CircuitPython doesn't support `uselect` for SAMD MCUs.
 class Poller:
     def __init__(self):
-        self.pumpers = []
+        self._pumpers = []
 
     def register(self, pumper):
-        self.pumpers.append(pumper)
+        self._pumpers.append(pumper)
 
     def poll(self):
-        for pumper in self.pumpers:
-            if pumper.available():
-                pumper.pump()
+        for pumper in self._pumpers:
+            pumper.pump()

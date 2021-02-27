@@ -23,7 +23,7 @@ class SportPumper(UartPumper):
         self._payload_listener = None
         self._subscribe_ids = {}
         self._publish_ids = {}
-        self._physical_id = None
+        self._has_id = False
 
     def add_subscriber(self, physical_id, callback):
         self._subscribe_ids[physical_id] = callback
@@ -33,10 +33,17 @@ class SportPumper(UartPumper):
 
     def _consume(self, b, is_clear):
         if b == self._START:
-            self._physical_id = None
-        elif self._physical_id is None:
-            self._physical_id = b
-            self._handle_physical_id(is_clear())
+            self._has_id = False
+        elif not self._has_id:
+            self._has_id = True
+            physical_id = b
+            # Check if we want to listen for data published by another device during this slot.
+            self._payload_listener = self._subscribe_ids.get(physical_id)
+            if self._payload_listener:
+                self._payload_reader.reset()
+            else:
+                # Check if we want to publish data during this slot.
+                self._handle_publish(physical_id, is_clear)
         elif self._payload_listener:
             finished = self._payload_reader.consume(b)
             if finished:
@@ -47,27 +54,14 @@ class SportPumper(UartPumper):
         else:
             _logger.debug("ignoring 0x02X", b)
 
-    def _handle_physical_id(self, clear):
-        if not self._handle_subscribe():
-            self._handle_publish(clear)
+    def _handle_publish(self, physical_id, is_clear):
+        listener = self._publish_ids.get(physical_id)
 
-    def _handle_subscribe(self):
-        self._payload_listener = self._subscribe_ids.get(self._physical_id)
-        has_listener = self._payload_listener is not None
-
-        if has_listener:
-            self._payload_reader.reset()
-
-        return has_listener
-
-    def _handle_publish(self, clear):
-        publish_callback = self._publish_ids.get(self._physical_id)
-
-        if not publish_callback:
+        if not listener:
             return
 
-        if clear:
-            publish_callback(self._uart.write)
+        if is_clear():
+            listener(self._uart.write)
         else:
             # This could happen if we're reading too slowly or if some other device has stolen this slot.
-            _logger.error("%s slot already contains data", PhysicalId.name(self._physical_id))
+            _logger.error("%s slot already contains data", PhysicalId.name(physical_id))
