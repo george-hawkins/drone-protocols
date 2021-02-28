@@ -28,47 +28,9 @@ Payload = namedtuple("Payload", "frame_id value_id data")
 
 # Notes:
 #
-# You can find sensor IDs in https://github.com/opentx/opentx/blob/2.3/radio/src/telemetry/frsky.h
-#
 # Note: time.monotonic_ns() appears to be the time since the last _hard_ reset.
 # It's a uint64_t value and and so will only roll over after 584 years.
 # On a SAMD51, the granularity is around 120us.
-
-
-class AbstractSensor:
-    def __init__(self, sensor_id):
-        self.sensor_id = sensor_id.to_bytes(2, SmartPort.BYTE_ORDER)
-
-    def get_value(self):
-        raise NotImplementedError("get_value")
-
-
-class Tmp1Sensor(AbstractSensor):
-    T1 = 0x0400
-
-    def __init__(self):
-        super().__init__(self.T1)
-        self._count = 0
-
-    def get_value(self):
-        self._count += 1
-        if self._count > 99999:
-            self._count = 0
-        return self._count
-
-
-class Tmp2Sensor(AbstractSensor):
-    T2 = 0x0410
-
-    def __init__(self):
-        super().__init__(self.T2)
-        self._count = 0
-
-    def get_value(self):
-        self._count -= 1
-        if self._count < 0:
-            self._count = 99999
-        return self._count
 
 
 def looper(end):

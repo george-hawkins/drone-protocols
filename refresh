@@ -5,8 +5,8 @@ py=/media/$USER/CIRCUITPY
 cp boot.py $py
 
 mkdir -p $py/lib
-cp lib/*.py $py/lib
+cp -r lib $py
 
-cp code-sport.py $py/code.py
+cp code-is-available-uart.py $py/code.py
 
 cp vtx_table_smart_audio_2_0_eu.json $py/vtx_table.json

@@ -1,8 +1,8 @@
-class Buffer:
-    LITTLE_ENDIAN = "little"
-    BIG_ENDIAN = "big"
+from util.byte_order import ByteOrder
 
-    def __init__(self, byte_order=LITTLE_ENDIAN):
+
+class Buffer:
+    def __init__(self, byte_order=ByteOrder.LITTLE):
         self._buffer = None
         self._length = 0
         self._offset = 0
