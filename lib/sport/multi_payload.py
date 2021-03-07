@@ -57,6 +57,7 @@ class MultiPayloadReader:
     #                              header^ len^ cmd^ ^checksum
     # If len were greater than 0 then there would be payload bytes between cmd and checksum.
     def consume(self, buffer):
+        # TODO: `buffer` here is actually the `payload` of `Frame.payload` so maybe `_frame` is a confusing name to use here.
         self._frame.set_buffer(buffer)
 
         header = self._frame.read_u8()

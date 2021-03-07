@@ -7,17 +7,18 @@ from util.buffer import ReadBuffer
 class MspVtxConfigCommand(MspCommand):
     COMMAND_VTX_CONFIG = 88
 
+    # Note: CircuitPython doesn't support '?' as the format character for booleans.
+    _STRUCT_FORMAT = "<BBBBBHBBHBBBB"
+
     def __init__(self, config):
         super().__init__(self.COMMAND_VTX_CONFIG)
         self.config = config
-        # Note: CircuitPython doesn't support '?' as the format character for booleans.
-        self.format = "<BBBBBHBBHBBBB"
 
     def get_response(self, payload):
         # TODO: note you can pack a tuple with the spread operator `x.pack(*my_tuple)` and unpack to a named tuple.
         #  Or unpack like so: `x, y, z = x.unpack(...)`.
         return self._create_response(struct.pack(
-            self.format,
+            self._STRUCT_FORMAT,
             self.config.type,
             self.config.band,
             self.config.channel,
