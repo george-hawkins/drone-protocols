@@ -16,7 +16,7 @@ class MspVtxConfigCommand(MspCommand):
         self.config = config
 
     def handle_request(self, _, response):
-        response.pack_info(
+        response.pack_into(
             self._STRUCT_FORMAT,
             self.config.type,
             self.config.band,

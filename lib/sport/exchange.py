@@ -52,7 +52,7 @@ class SportExchange:
         frame_payload = WriteBuffer()
         frame_payload.set_buffer(memoryview(bytearray(6)))
         self._has_msp_response = self._msp_response_encoder.encode(frame_payload)
-        self._write_frame(write, FrameId.MSP_SERVER, frame_payload.get_buffer(use_offset=False))
+        self._write_frame(write, FrameId.MSP_SERVER, frame_payload.get_buffer())
 
     def _write_frame(self, write, frame_id, frame_data):
         frame_data = self._frame_encoder.encode(frame_id, frame_data)
@@ -85,6 +85,8 @@ class SportExchange:
             self._msp_response_encoder.set_error(MspError.ERROR, result.command_id)
             return
 
-        # TODO: perhaps rename `result.payload` to `result.request`.
-        response_buffer = self._msp_response_encoder.set_command(command.id)
-        command.handle_request(result.payload, response_buffer)
+        def response_writer(response_buffer):
+            # TODO: perhaps rename `result.payload` to `result.request`.
+            command.handle_request(result.payload, response_buffer)
+
+        self._msp_response_encoder.set_command(command.id, response_writer)

@@ -53,7 +53,7 @@ Basic S.BUS input
 
 Once ready to go, I wired up an X-series FrSky RX to the GND, USB (i.e. 5V out) and RX pins of the ItsyBitsy, like so:
 
-![basic S.BUS in](basic-sbus-in.jpg)
+![basic S.BUS in](images/basic-sbus-in.jpg)
 
 And then confirmed, I could see data coming from the RX with this little program (slightly adapted from code found in the CircuitPython [UART guide](https://learn.adafruit.com/circuitpython-essentials/circuitpython-uart-serial)):
 
@@ -79,7 +79,7 @@ Inverted S.BUS input
 
 TODO: get rid of the section above - it doesn't make any sense to talk about whether S.BUS transmits data when the TX is on or off if you're not looking at a meaningful signal.
 
-![inverter S.BUS in](basic-sbus-in-with-inverter.jpg)
+![inverter S.BUS in](images/basic-sbus-in-with-inverter.jpg)
 
 TODO: provide details of resistors and transistor.
 
@@ -103,4 +103,4 @@ But obviously, the transistor isn't bidirectional - so you need two, one to inve
 
 And then treat the inverted RX and TX on the daughter breadboard as the "real" RX and TX pins and connect the TX here, via a 4.7k&ohm; resistor to the RX and then onto the S.PORT signal pin.
 
-![S.PORT bidirectional inverted](sport-bidirectional-inverted.jpg)
+![S.PORT bidirectional inverted](images/sport-bidirectional-inverted.jpg)
