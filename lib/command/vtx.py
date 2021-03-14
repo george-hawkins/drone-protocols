@@ -1,7 +1,8 @@
-import struct
+import logging
 
 from command.core import MspCommand
-from util.buffer import ReadBuffer
+
+_logger = logging.getLogger("vtx_commands")
 
 
 class MspVtxConfigCommand(MspCommand):
@@ -14,10 +15,8 @@ class MspVtxConfigCommand(MspCommand):
         super().__init__(self.COMMAND_VTX_CONFIG)
         self.config = config
 
-    def get_response(self, payload):
-        # TODO: note you can pack a tuple with the spread operator `x.pack(*my_tuple)` and unpack to a named tuple.
-        #  Or unpack like so: `x, y, z = x.unpack(...)`.
-        return self._create_response(struct.pack(
+    def handle_request(self, _, response):
+        response.pack_info(
             self._STRUCT_FORMAT,
             self.config.type,
             self.config.band,
@@ -32,7 +31,7 @@ class MspVtxConfigCommand(MspCommand):
             self.config.band_count,
             self.config.channel_count,
             self.config.level_count
-        ))
+        )
 
 
 class MspSetVtxConfigCommand(MspCommand):
@@ -45,13 +44,11 @@ class MspSetVtxConfigCommand(MspCommand):
         super().__init__(self.COMMAND_SET_VTX_CONFIG)
         self.config = config
 
-    # MspSetVtxConfigCommand is a bit unusual in that incoming payload is of variable length.
-    def get_response(self, payload):
-        response = self._create_response()
-        buffer = ReadBuffer(payload)
+    # MspSetVtxConfigCommand is a bit unusual in that incoming request is of variable length.
+    def handle_request(self, request, _):
         c = self.config
 
-        frequency = buffer.read_u16()
+        frequency = request.read_u16()
 
         if frequency <= self._BAND_CHANNEL_ENCODED:
             band = (frequency >> 3) + 1
@@ -60,48 +57,43 @@ class MspSetVtxConfigCommand(MspCommand):
         elif frequency <= self._MAX_FREQUENCY_MHZ:
             c.set_frequency(freq=frequency)
 
-        if not buffer.has_remaining(2):
-            return response
+        if not request.has_remaining(2):
+            return
 
-        c.power = buffer.read_u8()
-        c.pit_mode = buffer.read_u8()
+        c.power = request.read_u8()
+        c.pit_mode = request.read_u8()
 
-        if not buffer.has_remaining():
-            return response
+        if not request.has_remaining():
+            return
 
-        c.low_power_disarm = buffer.read_u8()
+        c.low_power_disarm = request.read_u8()
 
-        if not buffer.has_remaining(2):
-            return response
+        if not request.has_remaining(2):
+            return
 
-        c.pit_mode_freq = buffer.read_u16()
+        c.pit_mode_freq = request.read_u16()
 
-        if not buffer.has_remaining(4):
-            return response
+        if not request.has_remaining(4):
+            return
 
         # Above band and channel are encoded in the frequency value.
-        # Here they're unencoded and will overwrite the values set above.
-        band = buffer.read_u8()
-        channel = buffer.read_u8()
-        frequency = buffer.read_u16()
+        # Here band, channel and frequency are unencoded and will overwrite the values set above.
+        band = request.read_u8()
+        channel = request.read_u8()
+        frequency = request.read_u16()
 
         c.set_frequency(band=band, channel=channel, freq=frequency)
 
-        if not buffer.has_remaining(4):
-            return response
+        if not request.has_remaining(4):
+            return
 
-        band_count = buffer.read_u8()
-        channel_count = buffer.read_u8()
-        level_count = buffer.read_u8()
-        clear_table = buffer.read_u8()
+        band_count = request.read_u8()
+        channel_count = request.read_u8()
+        level_count = request.read_u8()
+        clear_table = request.read_u8() == 0
 
-        print("Warning: ignoring table resize values")
-        print(band_count)
-        print(channel_count)
-        print(level_count)
-        print(clear_table)
-
-        return self._create_response()
+        _logger.warning("ignoring table resize values - bands=%d, channels=%d, levels=%d, clear=%s",
+                        band_count, channel_count, level_count, clear_table)
 
 
 class MspVtxTableBandCommand(MspCommand):
@@ -111,22 +103,20 @@ class MspVtxTableBandCommand(MspCommand):
         super().__init__(self.COMMAND_VTX_TABLE_BAND)
         self.config = config
 
-    def get_response(self, payload):
-        offset = payload[0]
+    def handle_request(self, request, response):
+        offset = request.read_u8()
         band = self.config.bands_list[offset - 1]
-        name = band["name"].encode()
+        name = band["name"]
         frequencies = band["frequencies"]
         frequencies_len = len(frequencies)
-        data = \
-            bytes([offset, len(name)]) + \
-            name + \
-            bytes([ord(band["letter"]), int(band["is_factory_band"]), frequencies_len]) + \
-            struct.pack("<{}H".format(frequencies_len), *frequencies)
-        return self._create_response(data)
 
-
-# TODO: replace with SmartPort.BYTE_ORDER.
-BYTE_ORDER = "little"
+        response.write_u8(offset)
+        self._write_string(response, name)
+        response.write_u8(ord(band["letter"]))
+        response.write_u8(int(band["is_factory_band"]))
+        response.write_u8(frequencies_len)
+        for f in frequencies:
+            response.write_u16(f)
 
 
 class MspVtxTablePowerLevelCommand(MspCommand):
@@ -136,14 +126,11 @@ class MspVtxTablePowerLevelCommand(MspCommand):
         super().__init__(self.COMMAND_VTX_TABLE_POWER_LEVEL)
         self.config = config
 
-    def get_response(self, payload):
-        print(payload)
-        offset = payload[0]
+    def handle_request(self, request, response):
+        offset = request.read_u8()
         level = self.config.levels_list[offset - 1]
-        label = level["label"].encode()
-        data = \
-            bytes([offset]) + \
-            level["value"].to_bytes(2, BYTE_ORDER) + \
-            bytes([len(label)]) + \
-            label
-        return self._create_response(data)
+        label = level["label"]
+
+        response.write_u8(offset)
+        response.write_u16(level["value"])
+        self._write_string(response, label)

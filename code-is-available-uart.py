@@ -38,7 +38,7 @@ class Main:
             MspSetVtxConfigCommand(vtx_config),
             MspSaveAllCommand(configs)
         ]
-        return {c.command: c for c in commands}
+        return {c.id: c for c in commands}
 
     @staticmethod
     def _get_sensors():

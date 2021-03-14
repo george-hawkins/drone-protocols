@@ -1,9 +1,16 @@
 import logging
 
 from util.buffer import ReadBuffer, WriteBuffer
-
+from util.ffs import ffs
 
 _logger = logging.getLogger("multi_payload")
+
+
+class MspHeaderBits:
+    START_FLAG = 0x10
+    ERROR_FLAG = 0x20  # Used in outgoing messages only.
+    VERSION_MASK = 0xE0  # Used in incoming messages only.
+    SEQUENCE_MASK = 0x0F  # Used in incoming messages only.
 
 
 class MspError:
@@ -13,14 +20,16 @@ class MspError:
 
 
 class MspResult:
+    _EMPTY_PAYLOAD = memoryview(b'')
+
     def __init__(self):
-        self.command = -1
-        self.payload = None
+        self.command_id = 0
+        self.payload = ReadBuffer()
         self.error = None
 
-    def set(self, command=-1, payload=None, error=None):
-        self.command = command
-        self.payload = payload
+    def set(self, command=0, payload=None, error=None):
+        self.command_id = command
+        self.payload.set_buffer(payload if payload else self._EMPTY_PAYLOAD)
         self.error = error
         return self
 
@@ -29,11 +38,7 @@ class MultiPayloadReader:
     _BUFFER_LEN = 64
 
     _VERSION = 1
-    _VER_SHIFT = 5
-    _VER_MASK = 0x07
-    _SEQ_MASK = 0x0F
-# TODO: also used by response:
-    START_FLAG = 0x10
+    _VER_SHIFT = ffs(MspHeaderBits.VERSION_MASK)
 
     def __init__(self):
         self._frame = ReadBuffer()
@@ -61,13 +66,13 @@ class MultiPayloadReader:
         self._frame.set_buffer(buffer)
 
         header = self._frame.read_u8()
-        version = (header >> self._VER_SHIFT) & self._VER_MASK
+        version = (header & MspHeaderBits.VERSION_MASK) >> self._VER_SHIFT
 
         if version != self._VERSION:
             return self._result.set(error=MspError.VER_MISMATCH)
 
-        seq_number = header & self._SEQ_MASK
-        is_start = header & self.START_FLAG
+        seq_number = header & MspHeaderBits.SEQUENCE_MASK
+        is_start = header & MspHeaderBits.START_FLAG
 
         if is_start:
             self._request.reset_offset()
@@ -78,7 +83,7 @@ class MultiPayloadReader:
         elif not self._started:
             _logger.warning("ignoring frame %s", buffer)
             return None
-        elif seq_number != (self._last_seq + 1) & self._SEQ_MASK:
+        elif seq_number != (self._last_seq + 1) & MspHeaderBits.SEQUENCE_MASK:
             _logger.error("packet loss between %d and %d", self._last_seq, seq_number)
             self._started = False
             return None

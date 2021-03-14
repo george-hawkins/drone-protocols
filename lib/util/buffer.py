@@ -1,6 +1,9 @@
+import struct
+
 from util.byte_order import ByteOrder
 
 
+# TODO: perhaps offer allocation option for ctor, i.e. allocate memory view and set as buffer internally to ctor.
 class Buffer:
     def __init__(self, byte_order=ByteOrder.LITTLE):
         self._buffer = None
@@ -20,6 +23,9 @@ class Buffer:
 
     def reset_offset(self):
         self._offset = 0
+
+    def get_offset(self):
+        return self._offset
 
     def set_length(self, length):
         assert length <= len(self._buffer)
@@ -64,3 +70,7 @@ class WriteBuffer(Buffer):
         self._offset += length
         end = offset + length
         self._buffer[start:self._offset] = buffer[offset:end]
+
+    def pack_into(self, fmt, *values):
+        struct.pack_into(fmt, self._buffer, self._offset, *values)
+        self._offset += struct.calcsize(fmt)

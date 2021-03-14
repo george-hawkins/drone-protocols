@@ -18,8 +18,8 @@ class BlockingReader:
                 if diff > self._timeout:
                     return None
 
-    # Calculate a timeout based on a multiple of the transmission time for
-    # a byte at a given baud rate (assuming 8 data bits and one stop bit).
+    # Calculate a timeout (in nanoseconds) based on a multiple of the transmission
+    # time for a byte at a given baud rate (assuming 8 data bits and one stop bit).
     @staticmethod
     def calculate_timeout(baud_rate, factor):
         return (9 * factor) * pow(10, 9) // baud_rate

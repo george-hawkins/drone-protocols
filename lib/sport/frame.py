@@ -17,8 +17,9 @@ class Frame:
         self.payload = payload
 
 
+# TODO: rename to `FrameDecoder` or rename `FrameEncoder` to `FrameWriter`.
 class FrameReader:
-    _FRAME_LEN = 7
+    _FRAME_LEN = 7  # 1 byte frame ID and 6 bytes of payload.
 
     def __init__(self):
         self._buffer = memoryview(bytearray(self._FRAME_LEN))
@@ -80,7 +81,7 @@ class FrameEncoder:
         self._frame.write_u8(b)
 
     def encode(self, frame_id, payload):
-        assert len(payload) <= self._PAYLOAD_LEN
+        assert len(payload) == self._PAYLOAD_LEN
 
         self._frame.reset_offset()
         self._append(frame_id)
@@ -106,7 +107,6 @@ class Checksum:
     def validate(total):
         checksum = total & 0xFFFF
         checksum = Checksum._reduce(checksum)
-
         return checksum == 0xFF
 
     @staticmethod

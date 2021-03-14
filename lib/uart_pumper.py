@@ -13,11 +13,12 @@ class UartPumper:
     def __init__(self, tx, rx, baud_rate, echo=False):
         self._uart = busio.UART(tx, rx, baudrate=baud_rate, timeout=0, receiver_buffer_size=self._RX_BUFFER_LEN)
         self._rx_buffer = bytearray(self._RX_BUFFER_LEN)
-        if echo:
-            blocking_timeout = BlockingReader.calculate_timeout(baud_rate, factor=4)
-            self._blocking_reader = BlockingReader(blocking_timeout)
-        else:
-            self._blocking_reader = None
+        self._blocking_reader = self.create_blocking_reader(baud_rate) if echo else None
+
+    @staticmethod
+    def create_blocking_reader(baud_rate):
+        timeout = BlockingReader.calculate_timeout(baud_rate, factor=4)
+        return BlockingReader(timeout)
 
     def _write(self, tx_buffer):
         self._uart.write(tx_buffer)
@@ -49,6 +50,7 @@ class UartPumper:
         raise NotImplementedError("_consume")
 
 
+# TODO: rename to something like `PumpMaster` and `poll` to plain `pump`.
 # On MicroPython, this class used `uselect.poll` but CircuitPython doesn't support `uselect` for SAMD MCUs.
 class Poller:
     def __init__(self):
