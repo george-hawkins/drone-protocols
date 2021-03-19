@@ -1,5 +1,5 @@
 import logging
-from sport.code import SportControlCode as Code
+from sport.control_code import SportControlCode as Code
 from util.buffer import WriteBuffer
 
 _logger = logging.getLogger("frame")
@@ -17,11 +17,13 @@ class Frame:
         self.payload = payload
 
 
-# TODO: rename to `FrameDecoder` or rename `FrameEncoder` to `FrameWriter`.
-class FrameReader:
+class FrameDecoder:
     _FRAME_LEN = 7  # 1 byte frame ID and 6 bytes of payload.
 
+    INVALID_FRAME = object()
+
     def __init__(self):
+        # TODO: consider rewriting using a WriteBuffer.
         self._buffer = memoryview(bytearray(self._FRAME_LEN))
         self._frame = Frame(self._buffer[1:self._FRAME_LEN])  # First byte is the frame_id.
         self._offset = 0
@@ -33,33 +35,26 @@ class FrameReader:
         self._checksum_total = 0
         self._escaping = False
 
-    def consume(self, b):
+    def decode(self, b):
         if b == Code.ESCAPE:
             self._escaping = True
-            return False
+            return None
         elif self._escaping:
-            b ^= Code.ESCAPE_XOR
             self._escaping = False
+            b ^= Code.ESCAPE_XOR
 
         self._checksum_total += b
 
-        if self._finished():
-            return True
+        if self._offset < self._FRAME_LEN:
+            self._buffer[self._offset] = b
+            self._offset += 1
+            return None
 
-        self._buffer[self._offset] = b
-        self._offset += 1
-
-        return False
-
-    def _finished(self):
-        return self._offset == self._FRAME_LEN
-
-    def get_frame(self):
-        assert self._finished()
+        # We've received the complete frame so validate and return it.
 
         if not Checksum.validate(self._checksum_total):
             _logger.error("invalid checksum")
-            return None
+            return self.INVALID_FRAME
 
         self._frame.id = self._buffer[0]
 

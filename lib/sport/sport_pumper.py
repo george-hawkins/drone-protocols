@@ -1,7 +1,7 @@
 import logging
-from sport.code import SportControlCode
+from sport.control_code import SportControlCode
 
-from sport.frame import FrameReader
+from sport.frame import FrameDecoder
 from sport.physical_id import PhysicalId
 from uart_pumper import UartPumper
 
@@ -23,11 +23,11 @@ class SportPumper(UartPumper):
 
     def __init__(self, tx, rx):
         super().__init__(tx, rx, self._BAUD_RATE, echo=True)
-        self._frame_reader = FrameReader()
+        self._frame_decoder = FrameDecoder()
         self._frame_listener = None
         self._subscribe_ids = {}
         self._publish_ids = {}
-        self._has_id = False
+        self._has_physical_id = False
 
     def add_subscriber(self, physical_id, callback):
         self._subscribe_ids[physical_id] = callback
@@ -37,22 +37,21 @@ class SportPumper(UartPumper):
 
     def _consume(self, b, is_clear):
         if b == SportControlCode.START:
-            self._has_id = False
-        elif not self._has_id:
-            self._has_id = True
+            self._has_physical_id = False
+        elif not self._has_physical_id:
+            self._has_physical_id = True
             physical_id = b
             # Check if we want to listen for data published by another device during this slot.
             self._frame_listener = self._subscribe_ids.get(physical_id)
             if self._frame_listener:
-                self._frame_reader.reset()
+                self._frame_decoder.reset()
             else:
                 # Check if we want to publish data during this slot.
                 self._handle_publish(physical_id, is_clear)
         elif self._frame_listener:
-            finished = self._frame_reader.consume(b)
-            if finished:
-                frame = self._frame_reader.get_frame()
-                if frame:
+            frame = self._frame_decoder.decode(b)
+            if frame:
+                if frame is not FrameDecoder.INVALID_FRAME:
                     self._frame_listener(frame)
                 self._frame_listener = None
         else:

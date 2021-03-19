@@ -1,8 +1,8 @@
 import logging
 import board
 
-from command.core import MspApiVersionCommand, MspSaveAllCommand
-from command.vtx import MspVtxConfigCommand, MspVtxTableBandCommand, MspVtxTablePowerLevelCommand, \
+from msp.command.core import MspApiVersionCommand, MspSaveAllCommand
+from msp.command.vtx import MspVtxConfigCommand, MspVtxTableBandCommand, MspVtxTablePowerLevelCommand, \
     MspSetVtxConfigCommand
 from config.vtx import VtxConfig
 from sensor.demo import create_demo_2_sensor, create_demo_1_sensor

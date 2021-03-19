@@ -1,6 +1,7 @@
 import time
 
 
+# Use to do a blocking read (with timeout) on a non-blocking stream.
 class BlockingReader:
     def __init__(self, timeout=0):
         self._timeout = timeout

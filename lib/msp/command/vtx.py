@@ -1,6 +1,6 @@
 import logging
 
-from command.core import MspCommand
+from msp.command.core import MspCommand
 
 _logger = logging.getLogger("vtx_commands")
 

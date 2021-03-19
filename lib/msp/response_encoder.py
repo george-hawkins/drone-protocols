@@ -1,8 +1,9 @@
-from sport.multi_payload import MspHeaderBits
+from msp.request_decoder import MspHeaderBits
 from util.buffer import WriteBuffer, ReadBuffer
 from util.loop import loop
 
 
+# Encode an MSP response into one or more Sport frames.
 class MspResponseEncoder:
     _BUFFER_LEN = 64  # TODO: see how long responses typically are.
 

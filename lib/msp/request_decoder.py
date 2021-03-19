@@ -3,7 +3,7 @@ import logging
 from util.buffer import ReadBuffer, WriteBuffer
 from util.ffs import ffs
 
-_logger = logging.getLogger("multi_payload")
+_logger = logging.getLogger("response_encoder")
 
 
 class MspHeaderBits:
@@ -34,7 +34,8 @@ class MspResult:
         return self
 
 
-class MultiPayloadReader:
+# Decode one or more Sport frames into an MSP request.
+class MspRequestDecoder:
     _BUFFER_LEN = 64
 
     _VERSION = 1
@@ -61,7 +62,7 @@ class MultiPayloadReader:
     # A minimal message would be e.g. 0x30 0x00 0x01 0x01
     #                              header^ len^ cmd^ ^checksum
     # If len were greater than 0 then there would be payload bytes between cmd and checksum.
-    def consume(self, buffer):
+    def decode(self, buffer):
         # TODO: `buffer` here is actually the `payload` of `Frame.payload` so maybe `_frame` is a confusing name to use here.
         self._frame.set_buffer(buffer)
 

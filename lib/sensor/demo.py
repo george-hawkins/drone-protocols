@@ -1,4 +1,5 @@
-from sensor.sensor import SensorId, GeneratorSensor
+from sensor.sensor import GeneratorSensor
+from sensor.sensor_id import SensorId
 from util.loop import loop
 
 

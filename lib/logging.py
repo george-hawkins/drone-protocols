@@ -1,3 +1,4 @@
+# Originally copied from https://github.com/micropython/micropython-lib/tree/master/logging
 import sys
 
 CRITICAL = 50
@@ -19,7 +20,6 @@ _stream = sys.stderr
 
 
 class Logger:
-
     level = NOTSET
 
     def __init__(self, name):
