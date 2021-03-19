@@ -28,10 +28,46 @@ class MspVtxConfigCommand(MspCommand):
             self.config.low_power_disarm,
             self.config.pit_mode_freq,
             self.config.use_vtx_table,
-            self.config.band_count,
-            self.config.channel_count,
-            self.config.level_count
+            self.config.table.band_count,
+            self.config.table.channel_count,
+            self.config.table.level_count
         )
+
+
+class MspVtxTableBandCommand(MspCommand):
+    COMMAND_VTX_TABLE_BAND = 137
+
+    def __init__(self, config):
+        super().__init__(self.COMMAND_VTX_TABLE_BAND)
+        self.config = config
+
+    def handle_request(self, request, response):
+        offset = request.read_u8()
+        band = self.config.table.bands_list[offset - 1]
+
+        response.write_u8(offset)
+        self._write_with_length(response, band.name)
+        response.write_u8(band.letter)
+        response.write_u8(int(band.is_factory_band))
+        response.write_u8(len(band.frequencies))
+        for f in band.frequencies:
+            response.write_u16(f)
+
+
+class MspVtxTablePowerLevelCommand(MspCommand):
+    COMMAND_VTX_TABLE_POWER_LEVEL = 138
+
+    def __init__(self, config):
+        super().__init__(self.COMMAND_VTX_TABLE_POWER_LEVEL)
+        self.config = config
+
+    def handle_request(self, request, response):
+        offset = request.read_u8()
+        level = self.config.table.levels_list[offset - 1]
+
+        response.write_u8(offset)
+        response.write_u16(level.value)
+        self._write_with_length(response, level.label)
 
 
 class MspSetVtxConfigCommand(MspCommand):
@@ -44,7 +80,7 @@ class MspSetVtxConfigCommand(MspCommand):
         super().__init__(self.COMMAND_SET_VTX_CONFIG)
         self.config = config
 
-    # MspSetVtxConfigCommand is a bit unusual in that incoming request is of variable length.
+    # MspSetVtxConfigCommand is a bit unusual in that the incoming request is of variable length.
     def handle_request(self, request, _):
         c = self.config
 
@@ -94,43 +130,3 @@ class MspSetVtxConfigCommand(MspCommand):
 
         _logger.warning("ignoring table resize values - bands=%d, channels=%d, levels=%d, clear=%s",
                         band_count, channel_count, level_count, clear_table)
-
-
-class MspVtxTableBandCommand(MspCommand):
-    COMMAND_VTX_TABLE_BAND = 137
-
-    def __init__(self, config):
-        super().__init__(self.COMMAND_VTX_TABLE_BAND)
-        self.config = config
-
-    def handle_request(self, request, response):
-        offset = request.read_u8()
-        band = self.config.bands_list[offset - 1]
-        name = band["name"]
-        frequencies = band["frequencies"]
-        frequencies_len = len(frequencies)
-
-        response.write_u8(offset)
-        self._write_string(response, name)
-        response.write_u8(ord(band["letter"]))
-        response.write_u8(int(band["is_factory_band"]))
-        response.write_u8(frequencies_len)
-        for f in frequencies:
-            response.write_u16(f)
-
-
-class MspVtxTablePowerLevelCommand(MspCommand):
-    COMMAND_VTX_TABLE_POWER_LEVEL = 138
-
-    def __init__(self, config):
-        super().__init__(self.COMMAND_VTX_TABLE_POWER_LEVEL)
-        self.config = config
-
-    def handle_request(self, request, response):
-        offset = request.read_u8()
-        level = self.config.levels_list[offset - 1]
-        label = level["label"]
-
-        response.write_u8(offset)
-        response.write_u16(level["value"])
-        self._write_string(response, label)

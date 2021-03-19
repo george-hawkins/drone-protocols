@@ -9,9 +9,7 @@ class MspCommand:
         raise NotImplementedError("write_response")
 
     @staticmethod
-    def _write_string(response, s):
-        # TODO: should all the strings, e.g. in `config`, be encoded up front?
-        b = s.encode()
+    def _write_with_length(response, b):
         response.write_u8(len(b))
         response.write(b)
 
