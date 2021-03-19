@@ -1,0 +1,11 @@
+{
+    "type": "SMART_AUDIO",
+    "ready": true,
+    "use_vtx_table": true,
+    "low_power_disarm": 0,
+    "pit_mode": true,
+    "pit_mode_freq": 0,
+    "power": 1,
+    "band": 1,
+    "channel": 1
+}

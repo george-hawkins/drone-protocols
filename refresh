@@ -9,4 +9,5 @@ cp -r lib $py
 
 cp code-sport.py $py/code.py
 
+cp vtx_config.json $py
 cp vtx_table_smart_audio_2_0_eu.json $py/vtx_table.json
