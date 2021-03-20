@@ -1,7 +1,7 @@
 import json
 
 from config.vtx_table import VtxTable
-from util.field_name import get_field_name
+from util.util import get_field_name
 
 
 # From `vtxDevType_e` in Betaflight src/main/drivers/vtx_common.h

@@ -8,7 +8,7 @@ _logger = logging.getLogger("uart_pumper")
 
 
 class UartPumper:
-    _RX_BUFFER_LEN = 64
+    _RX_BUFFER_LEN = 32
 
     def __init__(self, tx, rx, baud_rate, echo=False):
         self._uart = busio.UART(tx, rx, baudrate=baud_rate, timeout=0, receiver_buffer_size=self._RX_BUFFER_LEN)
@@ -30,7 +30,7 @@ class UartPumper:
             for b in tx_buffer:
                 echo = self._blocking_reader.read(self._uart)
                 if echo != b:
-                    _logger.error("echo - expected %02X, got %02X", b, echo)
+                    _logger.error("echo - expected 0x%02X, got 0x%02X", b, echo)
                     return
 
     def pump(self):
@@ -50,15 +50,14 @@ class UartPumper:
         raise NotImplementedError("_consume")
 
 
-# TODO: rename to something like `PumpMaster` and `poll` to plain `pump`.
 # On MicroPython, this class used `uselect.poll` but CircuitPython doesn't support `uselect` for SAMD MCUs.
-class Poller:
+class PumpMaster:
     def __init__(self):
         self._pumpers = []
 
     def register(self, pumper):
         self._pumpers.append(pumper)
 
-    def poll(self):
+    def pump_all(self):
         for pumper in self._pumpers:
             pumper.pump()

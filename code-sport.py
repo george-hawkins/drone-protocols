@@ -8,21 +8,12 @@ from config.vtx import VtxConfig
 from sensor.demo import create_demo_2_sensor, create_demo_1_sensor
 from sport.coordinator import SportCoordinator
 from sport.sport_pumper import SportPumper
-from uart_pumper import UartPumper, Poller
+from util.uart_pumper import PumpMaster
 
 _logger = logging.getLogger("main")
 
 
-class HostPumper(UartPumper):
-    def _consume(self, b, is_clear):
-        print("{:02X}".format(b), is_clear())
-
-
 class Main:
-    _HOST_TX = board.A2
-    _HOST_RX = board.A3
-    _HOST_BAUD_RATE = 115200
-
     _SPORT_TX = board.TX
     _SPORT_RX = board.RX
 
@@ -52,15 +43,12 @@ class Main:
         poller.register(pumper)
 
     def run(self):
-        poller = Poller()
+        pump_master = PumpMaster()
 
-        self._setup_sport(poller)
-
-        host_pumper = HostPumper(self._HOST_TX, self._HOST_RX, self._HOST_BAUD_RATE)
-        poller.register(host_pumper)
+        self._setup_sport(pump_master)
 
         while True:
-            poller.poll()
+            pump_master.pump_all()
 
 
 Main().run()

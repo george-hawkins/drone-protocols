@@ -126,7 +126,7 @@ class MyTestCase(unittest.TestCase):
         expected = bytes([seq, 0xF1, 0x00, 0x00, 0x00, 0x00])
         self.assertEqual(expected, frame_buf)
 
-    def test_vtx_table_band(self):
+    def test_set_vtx_config(self):
         config = VtxConfig()
         command = MspSetVtxConfigCommand(config)
         response = command.get_response(b'\x00\x00\x01\x00')

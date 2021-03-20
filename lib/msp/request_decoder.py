@@ -1,7 +1,7 @@
 import logging
 
 from util.buffer import ReadBuffer, WriteBuffer
-from util.ffs import ffs
+from util.util import ffs
 
 _logger = logging.getLogger("response_encoder")
 

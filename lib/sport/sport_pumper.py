@@ -1,9 +1,9 @@
 import logging
 from sport.control_code import SportControlCode
 
-from sport.frame import FrameDecoder, FrameEncoder, Frame
+from sport.frame import FrameDecoder, FrameEncoder
 from sport.physical_id import PhysicalId
-from uart_pumper import UartPumper
+from util.uart_pumper import UartPumper
 
 _logger = logging.getLogger("sport_pumper")
 
@@ -66,10 +66,9 @@ class SportPumper(UartPumper):
 
         if is_clear():
             send = write_frame(self._frame_encoder.get_frame())
-            encoded_frame = self._frame_encoder.encode()
             if send:
+                encoded_frame = self._frame_encoder.encode()
                 self._write(encoded_frame)
-
         else:
             # This could happen if we're reading too slowly or if some other device has stolen this slot.
-            _logger.error("%s slot already contains data", PhysicalId.name(physical_id))
+            _logger.error("%s slot is not clear for writing", PhysicalId.name(physical_id))

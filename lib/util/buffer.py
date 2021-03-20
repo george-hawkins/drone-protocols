@@ -1,6 +1,6 @@
 import struct
 
-from util.byte_order import ByteOrder
+from util.util import ByteOrder
 
 
 # TODO: perhaps offer allocation option for ctor, i.e. allocate memory view and set as buffer internally to ctor.

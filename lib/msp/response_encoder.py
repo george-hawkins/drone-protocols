@@ -1,7 +1,7 @@
 from msp.request_decoder import MspHeaderBits
 from sport.frame import FrameId
 from util.buffer import WriteBuffer, ReadBuffer
-from util.loop import loop
+from util.util import loop
 
 
 # Encode an MSP response into one or more Sport frames.
@@ -13,32 +13,28 @@ class MspResponseEncoder:
         self._command = 0
         self._is_error = False
 
-        buffer = memoryview(bytearray(self._BUFFER_LEN))
         self._response = ReadBuffer()
-        self._write_view = WriteBuffer()
-        self._write_view.set_buffer(buffer)
         self._error_buffer = memoryview(bytearray(1))
 
         self._frame_payload = WriteBuffer()
 
-    def _reset(self, command, is_error):
+    @staticmethod
+    def create_response_buffer():
+        buffer = WriteBuffer()
+        buffer.set_buffer(memoryview(bytearray(MspResponseEncoder._BUFFER_LEN)))
+        return buffer
+
+    def _reset(self, command, buffer, is_error):
         self._command = command
         self._is_error = is_error
-        self._response.reset_offset()
+        self._response.set_buffer(buffer)
 
     def set_error(self, error, command):
-        self._reset(command, is_error=True)
         self._error_buffer[0] = error
-        self._response.set_buffer(self._error_buffer)
+        self._reset(command, self._error_buffer, is_error=True)
 
-    def set_command(self, command, response_writer):
-        self._reset(command, is_error=False)
-
-        # Get the caller to fill in the response data.
-        view = self._write_view
-        view.reset_offset()
-        response_writer(view)
-        self._response.set_buffer(view.get_buffer())
+    def set_command(self, command, buffer):
+        self._reset(command, buffer, is_error=False)
 
     def encode(self, frame):
         frame.set_id(FrameId.MSP_SERVER)

@@ -1,6 +1,6 @@
 from sensor.sensor import GeneratorSensor
 from sensor.sensor_id import SensorId
-from util.loop import loop
+from util.util import loop
 
 
 # In Betaflight, IDs `T1_FIRST` and `T2_FIRST` are pseudo-sensors that are actually used to report internal
