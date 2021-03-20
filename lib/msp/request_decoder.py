@@ -20,7 +20,7 @@ class MspError:
 
 
 class MspRequestResult:
-    _EMPTY_PAYLOAD = memoryview(b'')
+    _EMPTY_PAYLOAD = memoryview(b"")
 
     def __init__(self):
         self.command_id = 0

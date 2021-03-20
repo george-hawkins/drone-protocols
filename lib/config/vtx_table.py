@@ -15,7 +15,12 @@ class VtxTable:
             table = json.load(f)["vtx_table"]
 
         def to_band(d):
-            return VtxBand(d["name"].encode(), ord(d["letter"]), d["is_factory_band"], d["frequencies"])
+            return VtxBand(
+                d["name"].encode(),
+                ord(d["letter"]),
+                d["is_factory_band"],
+                d["frequencies"],
+            )
 
         def to_level(d):
             return VtxPowerLevel(d["value"], d["label"].encode())

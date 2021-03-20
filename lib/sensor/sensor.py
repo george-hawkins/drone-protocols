@@ -9,7 +9,13 @@ class SensorEncoder:
     @staticmethod
     def encode(sensor, frame):
         frame.set_id(FrameId.SENSOR)
-        struct.pack_into(SensorEncoder._STRUCT_FORMAT, frame.payload, 0, sensor.id, sensor.get_value())
+        struct.pack_into(
+            SensorEncoder._STRUCT_FORMAT,
+            frame.payload,
+            0,
+            sensor.id,
+            sensor.get_value(),
+        )
 
 
 class Sensor:

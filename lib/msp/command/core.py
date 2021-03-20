@@ -17,7 +17,8 @@ class MspCommand:
 class MspApiVersionCommand(MspCommand):
     COMMAND_API_VERSION = 1
 
-    _PROTOCOL_VERSION = 0  # This is distinct from the version encoded in the header byte of MSP frames.
+    # This is distinct from the version encoded in the header byte of MSP frames.
+    _PROTOCOL_VERSION = 0
 
     # The minor version is updated fairly regularly as the Betaflight developers add additional commands.
     # See https://github.com/betaflight/betaflight/blame/master/src/main/msp/msp_protocol.h

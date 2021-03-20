@@ -30,7 +30,7 @@ class MspVtxConfigCommand(MspCommand):
             self.config.use_vtx_table,
             self.config.table.band_count,
             self.config.table.channel_count,
-            self.config.table.level_count
+            self.config.table.level_count,
         )
 
 
@@ -128,5 +128,10 @@ class MspSetVtxConfigCommand(MspCommand):
         level_count = request.read_u8()
         clear_table = request.read_u8() == 0
 
-        _logger.warning("ignoring table resize values - bands=%d, channels=%d, levels=%d, clear=%s",
-                        band_count, channel_count, level_count, clear_table)
+        _logger.warning(
+            "ignoring table resize values - bands=%d, channels=%d, levels=%d, clear=%s",
+            band_count,
+            channel_count,
+            level_count,
+            clear_table,
+        )

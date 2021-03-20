@@ -2,8 +2,12 @@ import logging
 import board
 
 from msp.command.core import MspApiVersionCommand, MspSaveAllCommand
-from msp.command.vtx import MspVtxConfigCommand, MspVtxTableBandCommand, MspVtxTablePowerLevelCommand, \
-    MspSetVtxConfigCommand
+from msp.command.vtx import (
+    MspVtxConfigCommand,
+    MspVtxTableBandCommand,
+    MspVtxTablePowerLevelCommand,
+    MspSetVtxConfigCommand,
+)
 from config.vtx import VtxConfig
 from sensor.demo import create_demo_2_sensor, create_demo_1_sensor
 from sport.coordinator import SportCoordinator
@@ -27,7 +31,7 @@ class Main:
             MspVtxTableBandCommand(vtx_config),
             MspVtxTablePowerLevelCommand(vtx_config),
             MspSetVtxConfigCommand(vtx_config),
-            MspSaveAllCommand(configs)
+            MspSaveAllCommand(configs),
         ]
         return {c.id: c for c in commands}
 

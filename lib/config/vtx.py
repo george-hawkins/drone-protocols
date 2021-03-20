@@ -13,7 +13,9 @@ class VtxDeviceType:
 
 
 class VtxConfig:
-    def __init__(self, config_filename="vtx_config.json", table_filename="vtx_table.json"):
+    def __init__(
+        self, config_filename="vtx_config.json", table_filename="vtx_table.json"
+    ):
         self._filename = config_filename
 
         store = self._load()
@@ -59,7 +61,7 @@ class VtxConfig:
             "pit_mode_freq": self.pit_mode_freq,
             "power": self.power,
             "band": self.band,
-            "channel": self.channel
+            "channel": self.channel,
         }
         if self.band == 0:
             store["freq"] = self.freq

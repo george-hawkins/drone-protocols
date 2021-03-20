@@ -11,7 +11,13 @@ class UartPumper:
     _RX_BUFFER_LEN = 32
 
     def __init__(self, tx, rx, baud_rate, echo=False):
-        self._uart = busio.UART(tx, rx, baudrate=baud_rate, timeout=0, receiver_buffer_size=self._RX_BUFFER_LEN)
+        self._uart = busio.UART(
+            tx,
+            rx,
+            baudrate=baud_rate,
+            timeout=0,
+            receiver_buffer_size=self._RX_BUFFER_LEN,
+        )
         self._rx_buffer = bytearray(self._RX_BUFFER_LEN)
         self._blocking_reader = self.create_blocking_reader(baud_rate) if echo else None
 

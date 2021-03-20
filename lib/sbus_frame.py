@@ -26,7 +26,7 @@ class SBusFrame:
         # Channels are 11 bits, usually they're split over two bytes, e.g. 5 bits in one byte and 6 in the next.
         # But at points they're split over 3 bytes, e.g. 2 bits, 8 bits and 1 bit.
         while start < 22:
-            b = buffer[start:start + 3]
+            b = buffer[start : start + 3]
             self.channels[ch] = (int.from_bytes(b, "little") >> shift) & 0x7FF
             ch += 1
             if shift >= 5:

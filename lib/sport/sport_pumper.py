@@ -71,4 +71,6 @@ class SportPumper(UartPumper):
                 self._write(encoded_frame)
         else:
             # This could happen if we're reading too slowly or if some other device has stolen this slot.
-            _logger.error("%s slot is not clear for writing", PhysicalId.name(physical_id))
+            _logger.error(
+                "%s slot is not clear for writing", PhysicalId.name(physical_id)
+            )

@@ -23,7 +23,7 @@ class Buffer:
         self._offset = 0
 
     def get_buffer(self, use_offset=True):
-        return self._buffer[:self._offset] if use_offset else self._buffer
+        return self._buffer[: self._offset] if use_offset else self._buffer
 
     def reset_offset(self):
         self._offset = 0
@@ -56,7 +56,7 @@ class ReadBuffer(Buffer):
             length = self.remaining()
         start = self._offset
         self._offset += length
-        return self._buffer[start:self._offset]
+        return self._buffer[start : self._offset]
 
 
 class WriteBuffer(Buffer):
@@ -73,7 +73,7 @@ class WriteBuffer(Buffer):
         start = self._offset
         self._offset += length
         end = offset + length
-        self._buffer[start:self._offset] = buffer[offset:end]
+        self._buffer[start : self._offset] = buffer[offset:end]
 
     def pack_into(self, fmt, *values):
         struct.pack_into(fmt, self._buffer, self._offset, *values)

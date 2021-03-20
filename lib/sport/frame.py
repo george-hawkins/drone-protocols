@@ -16,7 +16,7 @@ class Frame:
 
     def __init__(self):
         self.buffer = memoryview(bytearray(self._FRAME_LEN))
-        self.payload = self.buffer[1:self._FRAME_LEN]  # First byte is the frame_id.
+        self.payload = self.buffer[1 : self._FRAME_LEN]  # First byte is the frame_id.
 
     def get_id(self):
         return self.buffer[0]
