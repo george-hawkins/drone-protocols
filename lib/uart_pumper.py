@@ -62,5 +62,3 @@ class Poller:
     def poll(self):
         for pumper in self._pumpers:
             pumper.pump()
-
-

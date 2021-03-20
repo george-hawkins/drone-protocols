@@ -18,13 +18,13 @@ class MyTestCase(unittest.TestCase):
         package = MspPackage()
         buffer = b"\x30\x00\x01\x02"
         result = package.handle_frame(buffer)
-        self.assertEqual(MspError.CRC_ERROR, result.error)
+        self.assertEqual(MspError.CHECKSUM, result.error)
 
     def test_bad_version(self):
         package = MspPackage()
         buffer = b"\x50\x00\x01\x01"
         result = package.handle_frame(buffer)
-        self.assertEqual(MspError.VER_MISMATCH, result.error)
+        self.assertEqual(MspError.VERSION_MISMATCH, result.error)
 
     def test_non_start_packet(self):
         package = MspPackage()
@@ -41,7 +41,7 @@ class MyTestCase(unittest.TestCase):
         frame_buf = bytearray(6)
         finished = response.write(0, frame_buf)
         self.assertTrue(finished)
-        expected = bytes([0x10, 0x03, command.PROTOCOL_VERSION, command.VERSION_MAJOR, command.VERSION_MINOR, 0x28])
+        expected = bytes([0x10, 0x03, command._PROTOCOL_VERSION, command._VERSION_MAJOR, command._VERSION_MINOR, 0x28])
         self.assertEqual(expected, frame_buf)
 
     def test_vtx_config_response(self):

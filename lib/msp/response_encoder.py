@@ -16,6 +16,7 @@ class MspResponseEncoder:
         self._response = ReadBuffer()
         self._write_view = WriteBuffer()
         self._write_view.set_buffer(buffer)
+        self._error_buffer = memoryview(bytearray(1))
 
     def _reset(self, command, is_error):
         self._command = command
@@ -24,7 +25,8 @@ class MspResponseEncoder:
 
     def set_error(self, error, command):
         self._reset(command, is_error=True)
-        self._response.write_u8(error)
+        self._error_buffer[0] = error
+        self._response.set_buffer(self._error_buffer)
 
     def set_command(self, command, response_writer):
         self._reset(command, is_error=False)
@@ -38,8 +40,8 @@ class MspResponseEncoder:
     def encode(self, frame_payload):
         header = next(self._sequence)
         response_remaining = self._response.remaining()
-        print("command {}, remaining {}".format(self._command, response_remaining))
 
+        # Write the start header if this is the frame of a given response.
         if self._response.get_offset() == 0:
             # Unlike the request, there's no version included in the header byte.
             # And the command isn't included as the third byte (but it is factored into the checksum).
@@ -52,9 +54,9 @@ class MspResponseEncoder:
             frame_payload.write_u8(header)
 
         frame_remaining = frame_payload.remaining()
-        count = min(frame_remaining, response_remaining)
+        remaining = min(frame_remaining, response_remaining)
 
-        frame_payload.write(self._response.read(count))
+        frame_payload.write(self._response.read(remaining))
 
         if response_remaining >= frame_remaining:
             return True

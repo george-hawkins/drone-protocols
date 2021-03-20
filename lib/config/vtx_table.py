@@ -29,5 +29,3 @@ class VtxTable:
 
     def get_freq(self, band, channel):
         return self.bands_list[band].frequencies[channel]
-
-

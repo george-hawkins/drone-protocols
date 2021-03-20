@@ -11,8 +11,7 @@ from util.loop import loop
 _logger = logging.getLogger("exchange")
 
 
-# TODO: `SportExchange` isn't a great name - it was supposed to capture the idea of a telephone exchange.
-class SportExchange:
+class SportCoordinator:
     _DEFAULT_TRANSMIT_ID = PhysicalId.ID27
     _DEFAULT_RECEIVE_ID = PhysicalId.ID13
 
@@ -55,7 +54,8 @@ class SportExchange:
         self._write_frame(write, FrameId.MSP_SERVER, frame_payload.get_buffer())
 
     def _write_frame(self, write, frame_id, frame_payload):
-        # TODO: should _frame_encoder be at this level? FrameDecoder is at the level below. Maybe rename `write` to `write_frame` and pass it frame_id and frame_payload.
+        # TODO: should _frame_encoder be at this level? FrameDecoder is at the level below. Maybe rename `write` to
+        #  `write_frame` and pass it frame_id and frame_payload.
         #  Or maybe rename `_transmit` to `_get_transmit_frame` and return None or a `Frame`.
         #  Or rename to _write_frame and the lower level could pass in frame (so no probs with buffer size) and return
         #  True or False to indicate whether the frame had been filled in or not - FrameEncoder could own the frame

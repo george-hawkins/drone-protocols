@@ -17,20 +17,20 @@ class MspCommand:
 class MspApiVersionCommand(MspCommand):
     COMMAND_API_VERSION = 1
 
-    PROTOCOL_VERSION = 0  # This is distinct from the version encoded in the header byte of MSP frames.
+    _PROTOCOL_VERSION = 0  # This is distinct from the version encoded in the header byte of MSP frames.
 
     # The minor version is updated fairly regularly as the Betaflight developers add additional commands.
     # See https://github.com/betaflight/betaflight/blame/master/src/main/msp/msp_protocol.h
-    VERSION_MAJOR = 1
-    VERSION_MINOR = 43
+    _VERSION_MAJOR = 1
+    _VERSION_MINOR = 43
 
     def __init__(self):
         super().__init__(self.COMMAND_API_VERSION)
 
     def handle_request(self, _, response):
-        response.write_u8(self.PROTOCOL_VERSION)
-        response.write_u8(self.VERSION_MAJOR)
-        response.write_u8(self.VERSION_MINOR)
+        response.write_u8(self._PROTOCOL_VERSION)
+        response.write_u8(self._VERSION_MAJOR)
+        response.write_u8(self._VERSION_MINOR)
 
 
 class MspSaveAllCommand(MspCommand):
@@ -38,11 +38,11 @@ class MspSaveAllCommand(MspCommand):
 
     def __init__(self, configs):
         super().__init__(self.COMMAND_SAVE_ALL)
-        self.configs = configs
+        self._configs = configs
 
     def handle_request(self, *_):
         try:
-            for c in self.configs:
+            for c in self._configs:
                 c.save()
         except OSError as e:
             # File-system probably needs to be remounted - see `boot.py`.

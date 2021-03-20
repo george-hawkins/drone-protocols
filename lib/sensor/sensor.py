@@ -6,7 +6,6 @@ class SensorEncoder:
     _STRUCT_FORMAT = "<HI"
 
     def __init__(self):
-        # TODO: don't create a per sensor buffer.
         self._buffer = bytearray(self._BUFFER_LEN)
 
     def encode(self, sensor):

@@ -6,7 +6,7 @@ from msp.command.vtx import MspVtxConfigCommand, MspVtxTableBandCommand, MspVtxT
     MspSetVtxConfigCommand
 from config.vtx import VtxConfig
 from sensor.demo import create_demo_2_sensor, create_demo_1_sensor
-from sport.exchange import SportExchange
+from sport.exchange import SportCoordinator
 from sport.sport_pumper import SportPumper
 from uart_pumper import UartPumper, Poller
 
@@ -46,9 +46,9 @@ class Main:
 
     def _setup_sport(self, poller):
         pumper = SportPumper(self._SPORT_TX, self._SPORT_RX)
-        exchange = SportExchange(pumper)
-        exchange.set_sensors(self._get_sensors())
-        exchange.set_commands(self._get_commands())
+        coordinator = SportCoordinator(pumper)
+        coordinator.set_sensors(self._get_sensors())
+        coordinator.set_commands(self._get_commands())
         poller.register(pumper)
 
     def run(self):

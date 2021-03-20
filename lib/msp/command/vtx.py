@@ -39,11 +39,11 @@ class MspVtxTableBandCommand(MspCommand):
 
     def __init__(self, config):
         super().__init__(self.COMMAND_VTX_TABLE_BAND)
-        self.config = config
+        self._config = config
 
     def handle_request(self, request, response):
         offset = request.read_u8()
-        band = self.config.table.bands_list[offset - 1]
+        band = self._config.table.bands_list[offset - 1]
 
         response.write_u8(offset)
         self._write_with_length(response, band.name)
@@ -59,11 +59,11 @@ class MspVtxTablePowerLevelCommand(MspCommand):
 
     def __init__(self, config):
         super().__init__(self.COMMAND_VTX_TABLE_POWER_LEVEL)
-        self.config = config
+        self._config = config
 
     def handle_request(self, request, response):
         offset = request.read_u8()
-        level = self.config.table.levels_list[offset - 1]
+        level = self._config.table.levels_list[offset - 1]
 
         response.write_u8(offset)
         response.write_u16(level.value)
@@ -78,11 +78,11 @@ class MspSetVtxConfigCommand(MspCommand):
 
     def __init__(self, config):
         super().__init__(self.COMMAND_SET_VTX_CONFIG)
-        self.config = config
+        self._config = config
 
     # MspSetVtxConfigCommand is a bit unusual in that the incoming request is of variable length.
     def handle_request(self, request, _):
-        c = self.config
+        c = self._config
 
         frequency = request.read_u16()
 
@@ -112,7 +112,7 @@ class MspSetVtxConfigCommand(MspCommand):
         if not request.has_remaining(4):
             return
 
-        # Above band and channel are encoded in the frequency value.
+        # Above band and channel can be encoded in the frequency value.
         # Here band, channel and frequency are unencoded and will overwrite the values set above.
         band = request.read_u8()
         channel = request.read_u8()
