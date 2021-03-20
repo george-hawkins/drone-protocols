@@ -1,4 +1,5 @@
 from msp.request_decoder import MspHeaderBits
+from sport.frame import FrameId
 from util.buffer import WriteBuffer, ReadBuffer
 from util.loop import loop
 
@@ -17,6 +18,8 @@ class MspResponseEncoder:
         self._write_view = WriteBuffer()
         self._write_view.set_buffer(buffer)
         self._error_buffer = memoryview(bytearray(1))
+
+        self._frame_payload = WriteBuffer()
 
     def _reset(self, command, is_error):
         self._command = command
@@ -37,7 +40,10 @@ class MspResponseEncoder:
         response_writer(view)
         self._response.set_buffer(view.get_buffer())
 
-    def encode(self, frame_payload):
+    def encode(self, frame):
+        frame.set_id(FrameId.MSP_SERVER)
+        self._frame_payload.set_buffer(frame.payload)
+
         header = next(self._sequence)
         response_remaining = self._response.remaining()
 
@@ -48,26 +54,26 @@ class MspResponseEncoder:
             header |= MspHeaderBits.START_FLAG
             if self._is_error:
                 header |= MspHeaderBits.ERROR_FLAG
-            frame_payload.write_u8(header)
-            frame_payload.write_u8(response_remaining)
+            self._frame_payload.write_u8(header)
+            self._frame_payload.write_u8(response_remaining)
         else:
-            frame_payload.write_u8(header)
+            self._frame_payload.write_u8(header)
 
-        frame_remaining = frame_payload.remaining()
+        frame_remaining = self._frame_payload.remaining()
         remaining = min(frame_remaining, response_remaining)
 
-        frame_payload.write(self._response.read(remaining))
+        self._frame_payload.write(self._response.read(remaining))
 
         if response_remaining >= frame_remaining:
             return True
 
         checksum = self._calculate_checksum(self._command, self._response.get_buffer())
 
-        frame_payload.write_u8(checksum)
+        self._frame_payload.write_u8(checksum)
 
         # Pad out the rest of the frame - the value doesn't matter but 0 looks nicer when debugging.
-        while frame_payload.has_remaining():
-            frame_payload.write_u8(0)
+        while self._frame_payload.has_remaining():
+            self._frame_payload.write_u8(0)
 
         return False  # No more to come.
 

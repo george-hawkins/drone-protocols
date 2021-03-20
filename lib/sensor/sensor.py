@@ -1,16 +1,15 @@
 import struct
 
+from sport.frame import FrameId
+
 
 class SensorEncoder:
-    _BUFFER_LEN = 6
     _STRUCT_FORMAT = "<HI"
 
-    def __init__(self):
-        self._buffer = bytearray(self._BUFFER_LEN)
-
-    def encode(self, sensor):
-        struct.pack_into(self._STRUCT_FORMAT, self._buffer, 0, sensor.id, sensor.get_value())
-        return self._buffer
+    @staticmethod
+    def encode(sensor, frame):
+        frame.set_id(FrameId.SENSOR)
+        struct.pack_into(SensorEncoder._STRUCT_FORMAT, frame.payload, 0, sensor.id, sensor.get_value())
 
 
 class Sensor:

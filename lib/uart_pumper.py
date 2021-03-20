@@ -30,7 +30,7 @@ class UartPumper:
             for b in tx_buffer:
                 echo = self._blocking_reader.read(self._uart)
                 if echo != b:
-                    _logger.error("data was not echoed")
+                    _logger.error("echo - expected %02X, got %02X", b, echo)
                     return
 
     def pump(self):

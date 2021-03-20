@@ -1,7 +1,7 @@
 import logging
 from sport.control_code import SportControlCode
 
-from sport.frame import FrameDecoder
+from sport.frame import FrameDecoder, FrameEncoder, Frame
 from sport.physical_id import PhysicalId
 from uart_pumper import UartPumper
 
@@ -24,16 +24,17 @@ class SportPumper(UartPumper):
     def __init__(self, tx, rx):
         super().__init__(tx, rx, self._BAUD_RATE, echo=True)
         self._frame_decoder = FrameDecoder()
+        self._frame_encoder = FrameEncoder()
         self._frame_listener = None
         self._subscribe_ids = {}
         self._publish_ids = {}
         self._has_physical_id = False
 
-    def add_subscriber(self, physical_id, callback):
-        self._subscribe_ids[physical_id] = callback
+    def add_subscriber(self, physical_id, subscriber):
+        self._subscribe_ids[physical_id] = subscriber
 
-    def add_publisher(self, physical_id, callback):
-        self._publish_ids[physical_id] = callback
+    def add_publisher(self, physical_id, publisher):
+        self._publish_ids[physical_id] = publisher
 
     def _consume(self, b, is_clear):
         if b == SportControlCode.START:
@@ -58,13 +59,17 @@ class SportPumper(UartPumper):
             _logger.debug("ignoring 0x%02X", b)
 
     def _handle_publish(self, physical_id, is_clear):
-        listener = self._publish_ids.get(physical_id)
+        write_frame = self._publish_ids.get(physical_id)
 
-        if not listener:
+        if not write_frame:
             return
 
         if is_clear():
-            listener(self._write)
+            send = write_frame(self._frame_encoder.get_frame())
+            encoded_frame = self._frame_encoder.encode()
+            if send:
+                self._write(encoded_frame)
+
         else:
             # This could happen if we're reading too slowly or if some other device has stolen this slot.
             _logger.error("%s slot already contains data", PhysicalId.name(physical_id))

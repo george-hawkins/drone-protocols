@@ -6,7 +6,7 @@ from msp.command.vtx import MspVtxConfigCommand, MspVtxTableBandCommand, MspVtxT
     MspSetVtxConfigCommand
 from config.vtx import VtxConfig
 from sensor.demo import create_demo_2_sensor, create_demo_1_sensor
-from sport.exchange import SportCoordinator
+from sport.coordinator import SportCoordinator
 from sport.sport_pumper import SportPumper
 from uart_pumper import UartPumper, Poller
 

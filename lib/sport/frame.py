@@ -12,26 +12,31 @@ class FrameId:
 
 
 class Frame:
-    def __init__(self, payload):
-        self.id = 0
-        self.payload = payload
+    _FRAME_LEN = 7  # 1 byte frame ID and 6 bytes of payload.
+
+    def __init__(self):
+        self.buffer = memoryview(bytearray(self._FRAME_LEN))
+        self.payload = self.buffer[1:self._FRAME_LEN]  # First byte is the frame_id.
+
+    def get_id(self):
+        return self.buffer[0]
+
+    def set_id(self, frame_id):
+        self.buffer[0] = frame_id
 
 
 class FrameDecoder:
-    _FRAME_LEN = 7  # 1 byte frame ID and 6 bytes of payload.
-
     INVALID_FRAME = object()
 
     def __init__(self):
-        # TODO: consider rewriting using a WriteBuffer.
-        self._buffer = memoryview(bytearray(self._FRAME_LEN))
-        self._frame = Frame(self._buffer[1:self._FRAME_LEN])  # First byte is the frame_id.
-        self._offset = 0
+        self._frame = Frame()
+        self._decoded = WriteBuffer()
+        self._decoded.set_buffer(self._frame.buffer)
         self._checksum_total = 0
         self._escaping = False
 
     def reset(self):
-        self._offset = 0
+        self._decoded.reset_offset()
         self._checksum_total = 0
         self._escaping = False
 
@@ -45,9 +50,8 @@ class FrameDecoder:
 
         self._checksum_total += b
 
-        if self._offset < self._FRAME_LEN:
-            self._buffer[self._offset] = b
-            self._offset += 1
+        if self._decoded.has_remaining():
+            self._decoded.write_u8(b)
             return None
 
         # We've received the complete frame so validate and return it.
@@ -56,38 +60,36 @@ class FrameDecoder:
             _logger.error("invalid checksum")
             return self.INVALID_FRAME
 
-        self._frame.id = self._buffer[0]
-
         return self._frame
 
 
 class FrameEncoder:
-    _PAYLOAD_LEN = 6
     _BUFFER_LEN = 16  # Worst case: frame ID + payload + checksum = 8 and every byte is doubled by escaping.
 
     def __init__(self):
-        self._frame = WriteBuffer()
-        self._frame.set_buffer(memoryview(bytearray(self._BUFFER_LEN)))
+        self._frame = Frame()
+        self._encoded = WriteBuffer()
+        self._encoded.set_buffer(memoryview(bytearray(self._BUFFER_LEN)))
+
+    def get_frame(self):
+        return self._frame
 
     def _append(self, b):
         if b == Code.ESCAPE or b == Code.START:
-            self._frame.write_u8(Code.ESCAPE)
+            self._encoded.write_u8(Code.ESCAPE)
             b ^= Code.ESCAPE_XOR
-        self._frame.write_u8(b)
+        self._encoded.write_u8(b)
 
-    def encode(self, frame_id, payload):
-        assert len(payload) == self._PAYLOAD_LEN
+    def encode(self):
+        self._encoded.reset_offset()
 
-        self._frame.reset_offset()
-        self._append(frame_id)
-
-        for b in payload:
+        for b in self._frame.buffer:
             self._append(b)
 
-        total = frame_id + sum(payload)
+        total = sum(self._frame.buffer)
         self._append(Checksum.calculate(total))
 
-        return self._frame.get_buffer()
+        return self._encoded.get_buffer()
 
 
 class Checksum:
