@@ -3,13 +3,17 @@ import struct
 from util.util import ByteOrder
 
 
-# TODO: perhaps offer allocation option for ctor, i.e. allocate memory view and set as buffer internally to ctor.
 class Buffer:
-    def __init__(self, byte_order=ByteOrder.LITTLE):
+    def __init__(self, *, buffer=None, length=-1, byte_order=ByteOrder.LITTLE):
         self._buffer = None
         self._length = 0
         self._offset = 0
         self._byte_order = byte_order
+
+        if buffer is not None:
+            self.set_buffer(buffer, length)
+        elif length != -1:
+            self.set_buffer(memoryview(bytearray(length)))
 
     def set_buffer(self, buffer, length=-1):
         assert isinstance(buffer, memoryview)

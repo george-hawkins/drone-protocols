@@ -43,8 +43,7 @@ class MspRequestDecoder:
 
     def __init__(self):
         self._frame_payload = ReadBuffer()
-        self._request = WriteBuffer()
-        self._request.set_buffer(memoryview(bytearray(self._BUFFER_LEN)))
+        self._request = WriteBuffer(length=self._BUFFER_LEN)
         self._result = MspRequestResult()
         self._command = -1
         self._started = False

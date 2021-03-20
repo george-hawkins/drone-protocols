@@ -20,9 +20,7 @@ class MspResponseEncoder:
 
     @staticmethod
     def create_response_buffer():
-        buffer = WriteBuffer()
-        buffer.set_buffer(memoryview(bytearray(MspResponseEncoder._BUFFER_LEN)))
-        return buffer
+        return WriteBuffer(length=MspResponseEncoder._BUFFER_LEN)
 
     def _reset(self, command, buffer, is_error):
         self._command = command

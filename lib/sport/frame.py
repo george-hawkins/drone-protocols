@@ -30,8 +30,7 @@ class FrameDecoder:
 
     def __init__(self):
         self._frame = Frame()
-        self._decoded = WriteBuffer()
-        self._decoded.set_buffer(self._frame.buffer)
+        self._decoded = WriteBuffer(buffer=self._frame.buffer)
         self._checksum_total = 0
         self._escaping = False
 
@@ -68,8 +67,7 @@ class FrameEncoder:
 
     def __init__(self):
         self._frame = Frame()
-        self._encoded = WriteBuffer()
-        self._encoded.set_buffer(memoryview(bytearray(self._BUFFER_LEN)))
+        self._encoded = WriteBuffer(length=self._BUFFER_LEN)
 
     def get_frame(self):
         return self._frame
