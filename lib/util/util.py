@@ -21,3 +21,8 @@ def ffs(x):
 class ByteOrder:
     LITTLE = "little"
     BIG = "big"
+
+
+# CircuitPython doesn't provide itertools.repeat
+def repeat(value, count):
+    return (value for _ in range(count))

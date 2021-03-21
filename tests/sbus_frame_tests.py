@@ -1,6 +1,6 @@
 import unittest
 
-from sbus_frame import SBusFrame
+from sbus.sbus_decoder import SbusDecoder
 
 
 # The test frames here were randomly generated and then parsed with parsing logic copied from
@@ -40,14 +40,17 @@ class SBusFrameTests(unittest.TestCase):
     def _test(self, frame, expected, lost, safe):
         test_data = bytearray.fromhex(frame.replace(":", ""))
 
-        parser = SBusFrame()
-        parser.parse(test_data)
+        decoder = SbusDecoder()
+        for b in test_data[:-1]:
+            decoder.decode(b)
 
-        actual = ":".join("{:03X}".format(ch) for ch in parser.channels)
+        frame = decoder.decode(test_data[-1:])
+
+        actual = ":".join("{:03X}".format(ch) for ch in frame.channels)
 
         self.assertEqual(expected, actual)
-        self.assertEqual(parser.lost_frame, lost)
-        self.assertEqual(parser.failsafe, safe)
+        self.assertEqual(frame.lost_frame, lost)
+        self.assertEqual(frame.failsafe, safe)
 
 
 if __name__ == '__main__':
